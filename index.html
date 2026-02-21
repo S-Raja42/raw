@@ -137,7 +137,7 @@ button{
 <div id="loginScreen">
 <h3>Login 🔐</h3>
 <input type="text" id="name" placeholder="Your Name">
-<input type="text" id="photo" placeholder="Photo URL">
+<input type="file" id="photo" accept="image/*">
 <button onclick="login()">Enter Chat</button>
 </div>
 
@@ -161,7 +161,7 @@ button{
 </div>
 </div>
 
-<audio id="bgMusic" src="Venmathiye.mp4" loop></audio>
+<audio id="bgMusic" src="Venmathiye.mp3" loop></audio>
 <audio id="notifySound" src="notify.mp3"></audio>
 
 <script>
@@ -228,20 +228,48 @@ function loadMessages(){
 }
 
 function sendMessage(){
-    let message=document.getElementById("message").value;
+  let message=document.getElementById("message").value;
+  let file=document.getElementById("photo").files[0];
 
-    fetch(url,{
+  if(file){
+    let reader=new FileReader();
+    reader.onload=function(){
+      let base64=reader.result.split(",")[1];
+
+      fetch(url,{
         method:"POST",
         body:JSON.stringify({
-            type:"message",
-            name:currentUser,
-            message:message,
-            photo:currentPhoto
+          type:"uploadImage",
+          image:base64,
+          mimeType:file.type,
+          fileName:file.name
         })
-    }).then(()=>{
-        document.getElementById("message").value="";
-        loadMessages();
-    });
+      })
+      .then(res=>res.json())
+      .then(data=>{
+        sendFinalMessage(data.url,message);
+      });
+    };
+    reader.readAsDataURL(file);
+  }else{
+    sendFinalMessage("",message);
+  }
+}
+
+function sendFinalMessage(photoUrl,message){
+  fetch(url,{
+    method:"POST",
+    body:JSON.stringify({
+      type:"message",
+      name:currentUser,
+      message:message,
+      photo:photoUrl
+    })
+  }).then(()=>{
+    document.getElementById("message").value="";
+    document.getElementById("photo").value="";
+    loadMessages();
+  });
 }
 
 function toggleMusic(){
@@ -260,4 +288,5 @@ setInterval(loadMessages,3000);
 </script>
 
 </body>
+
 </html>
